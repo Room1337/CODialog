@@ -5,6 +5,7 @@
 //  Created by Erik Aigner on 10.04.12.
 //  Copyright (c) 2012 chocomoko.com. All rights reserved.
 //
+// ROOM1337-fixes and alterations to the show (/update) & hide methods, see comments below
 
 #import "CODialog.h"
 
@@ -407,7 +408,14 @@ CODialogSynth(highlightedIndex)
   return [field text];
 }
 
-- (void)showOrUpdateAnimatedInternal:(BOOL)flag {
+// ROOM1337-did to the show methods:
+// separated public show & update methods, since update animated never makes sense (right?)
+// added variants with block param
+// added variants with delay param for symmetry with the hide methods, can use instead of that batchDelay property
+// fixed object param passed to performSelector:withObject:... so NO passed as nil, only non-NO passed as an object (i think this is effective)
+// fixed cancel call used to fail due to non-matching object param, work-around tyrrany of no performSelector:withObject:withObject:afterDelay:
+
+- (void)internalShowOrUpdateAnimated:(BOOL)flag withCompletionBlock:(void (^)(void))block {
   CODialogAssertMQ();
   
   CODialogWindowOverlay *overlay = self.overlay;
@@ -439,7 +447,8 @@ CODialogSynth(highlightedIndex)
       overlay.alpha = 1.0;
       self.transform = originalTransform;
     } completion:^(BOOL finished) {
-      // stub
+      if (block)
+        block();
     }];
     
     [overlay addSubview:self];
@@ -449,14 +458,56 @@ CODialogSynth(highlightedIndex)
     self.transform = originalTransform;
 }
 
-- (void)showOrUpdateAnimated:(BOOL)flag {
-  CODialogAssertMQ();
-  SEL selector = @selector(showOrUpdateAnimatedInternal:);
-  [NSObject cancelPreviousPerformRequestsWithTarget:self selector:selector object:nil];
-  [self performSelector:selector withObject:(flag ? [NSNumber numberWithBool:1] : nil) afterDelay:self.batchDelay]; // ROOM1337-use nil instead of @NO
+- (void)internalShowOrUpdateAnimated:(BOOL)flag {
+  [self internalShowOrUpdateAnimated:flag withCompletionBlock:nil];
 }
 
-- (void)hideAnimated:(BOOL)flag {
+- (void)internalShowOrUpdateAnimatedWithCompletionBlock:(void (^)(void))block {
+  [self internalShowOrUpdateAnimated:YES withCompletionBlock:block];
+}
+
+- (void)showAnimated:(BOOL)flag afterDelay:(NSTimeInterval)delay {
+  CODialogAssertMQ();
+  
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
+  SEL selector = @selector(internalShowOrUpdateAnimated:);
+  [self performSelector:selector withObject:(flag ? [NSNumber numberWithBool:1] : nil) afterDelay:delay];
+}
+
+- (void)showAnimatedAfterDelay:(NSTimeInterval)delay withCompletionBlock:(void (^)(void))block {
+  CODialogAssertMQ();
+  
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
+  SEL selector = @selector(internalShowOrUpdateAnimatedWithCompletionBlock:);
+  [self performSelector:selector withObject:block afterDelay:delay];
+}
+
+- (void)showAnimated:(BOOL)flag {
+  [self showAnimated:flag afterDelay:self.batchDelay];
+}
+
+- (void)showAnimatedWithCompletionBlock:(void (^)(void))block {
+  [self showAnimatedAfterDelay:self.batchDelay withCompletionBlock:block];
+}
+
+- (void)showOrUpdateAnimated:(BOOL)flag {
+  [self showAnimated:flag afterDelay:self.batchDelay];
+}
+
+- (void)update {
+  CODialogAssertMQ();
+  
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
+  SEL selector = @selector(internalShowOrUpdateAnimated:);
+  [self performSelector:selector withObject:nil afterDelay:0];
+}
+
+// ROOM1337-did to the hide methods:
+// added variants with block param
+// fixed object param passed to performSelector:withObject:... so NO passed as nil, only non-NO passed as an object (i think this is effective)
+// fixed cancel call used to fail due to non-matching object param, work-around tyrrany of no performSelector:withObject:withObject:afterDelay:
+
+- (void)internalHideAnimated:(BOOL)flag withCompletionBlock:(void (^)(void))block {
   CODialogAssertMQ();
   
   CODialogWindowOverlay *overlay = self.overlay;
@@ -482,15 +533,42 @@ CODialogSynth(highlightedIndex)
     // https://github.com/eaigner/CODialog/issues/6
     //
     [self.hostWindow makeKeyWindow];
+    
+    if (block)
+      block();
   }];
+}
+
+- (void)internalHideAnimated:(BOOL)flag {
+  [self internalHideAnimated:flag withCompletionBlock:nil];
+}
+
+- (void)internalHideAnimatedWithCompletionBlock:(void (^)(void))block {
+  [self internalHideAnimated:YES withCompletionBlock:block];
 }
 
 - (void)hideAnimated:(BOOL)flag afterDelay:(NSTimeInterval)delay {
   CODialogAssertMQ();
   
-  SEL selector = @selector(hideAnimated:);
-  [NSObject cancelPreviousPerformRequestsWithTarget:self selector:selector object:nil];
-  [self performSelector:selector withObject:(flag ? [NSNumber numberWithBool:1] : nil) afterDelay:delay]; // ROOM1337-use nil instead of @NO
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
+  SEL selector = @selector(internalHideAnimated:);
+  [self performSelector:selector withObject:(flag ? [NSNumber numberWithBool:1] : nil) afterDelay:delay];
+}
+
+- (void)hideAnimatedAfterDelay:(NSTimeInterval)delay withCompletionBlock:(void (^)(void))block {
+  CODialogAssertMQ();
+  
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
+  SEL selector = @selector(internalHideAnimatedWithCompletionBlock:);
+  [self performSelector:selector withObject:block afterDelay:delay];
+}
+
+- (void)hideAnimated:(BOOL)flag {
+  [self hideAnimated:flag afterDelay:0];
+}
+
+- (void)hideAnimatedWithCompletionBlock:(void (^)(void))block {
+  [self hideAnimatedAfterDelay:0 withCompletionBlock:block];
 }
 
 - (void)drawDialogBackgroundInRect:(CGRect)rect {

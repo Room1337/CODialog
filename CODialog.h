@@ -5,6 +5,7 @@
 //  Created by Erik Aigner on 10.04.12.
 //  Copyright (c) 2012 chocomoko.com. All rights reserved.
 //
+// ROOM1337-fixes and alterations to the show (/update) & hide methods, see comments in the .m
 
 #import <UIKit/UIKit.h>
 
@@ -48,9 +49,19 @@ typedef NSInteger CODialogStyle;
 
 /** @name Showing, Updating and Hiding */
 
-- (void)showOrUpdateAnimated:(BOOL)flag;
+- (void)showAnimated:(BOOL)flag;
+- (void)showAnimated:(BOOL)flag afterDelay:(NSTimeInterval)delay;
+- (void)showAnimatedWithCompletionBlock:(void (^)(void))block;
+- (void)showAnimatedAfterDelay:(NSTimeInterval)delay withCompletionBlock:(void (^)(void))block;
+
+- (void)showOrUpdateAnimated:(BOOL)flag; // ROOM1337-for compatibility
+
+- (void)update;
+
 - (void)hideAnimated:(BOOL)flag;
 - (void)hideAnimated:(BOOL)flag afterDelay:(NSTimeInterval)delay;
+- (void)hideAnimatedWithCompletionBlock:(void (^)(void))block;
+- (void)hideAnimatedAfterDelay:(NSTimeInterval)delay withCompletionBlock:(void (^)(void))block;
 
 /** @name Methods to Override */
 
