@@ -423,25 +423,30 @@ CODialogSynth(highlightedIndex)
     overlay.alpha = 0.0;
   }
   
+  CGAffineTransform originalTransform = self.transform; // ROOM1337-save transform set by caller, set to Identity before calling layout, restore below
+  self.transform = CGAffineTransformIdentity;
+  
   // Layout components
   [self layoutComponents];
   
   if (show) {
     // Scale down ourselves for pop animation
-    self.transform = CGAffineTransformMakeScale(kCODialogPopScale, kCODialogPopScale);
+    self.transform = CGAffineTransformScale(originalTransform, kCODialogPopScale, kCODialogPopScale); // ROOM1337-changed from CGAffineTransformMakeScale
     
     // Animate
     NSTimeInterval animationDuration = (flag ? kCODialogAnimationDuration : 0.0);
     [UIView animateWithDuration:animationDuration delay:0 options:UIViewAnimationOptionLayoutSubviews animations:^{
       overlay.alpha = 1.0;
-      self.transform = CGAffineTransformIdentity;
+      self.transform = originalTransform;
     } completion:^(BOOL finished) {
       // stub
     }];
     
     [overlay addSubview:self];
     [overlay makeKeyAndVisible];
-  }
+    
+  } else
+    self.transform = originalTransform;
 }
 
 - (void)showOrUpdateAnimated:(BOOL)flag {
@@ -461,13 +466,15 @@ CODialogSynth(highlightedIndex)
     return;
   }
   
+  CGAffineTransform originalTransform = self.transform; // ROOM1337-save transform so it can be restored below
+  
   NSTimeInterval animationDuration = (flag ? kCODialogAnimationDuration : 0.0);
   [UIView animateWithDuration:animationDuration delay:0 options:UIViewAnimationOptionLayoutSubviews animations:^{
     overlay.alpha = 0.0;
-    self.transform = CGAffineTransformMakeScale(kCODialogPopScale, kCODialogPopScale);
+    self.transform = CGAffineTransformScale(originalTransform, kCODialogPopScale, kCODialogPopScale); // ROOM1337-changed from CGAffineTransformMakeScale
   } completion:^(BOOL finished) {
     overlay.hidden = YES;
-    self.transform = CGAffineTransformIdentity;
+    self.transform = originalTransform;
     [self removeFromSuperview];
     self.overlay = nil;
     
