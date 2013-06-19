@@ -448,7 +448,7 @@ CODialogSynth(highlightedIndex)
   CODialogAssertMQ();
   SEL selector = @selector(showOrUpdateAnimatedInternal:);
   [NSObject cancelPreviousPerformRequestsWithTarget:self selector:selector object:nil];
-  [self performSelector:selector withObject:[NSNumber numberWithBool:flag] afterDelay:self.batchDelay];
+  [self performSelector:selector withObject:(flag ? [NSNumber numberWithBool:1] : nil) afterDelay:self.batchDelay]; // ROOM1337-use nil instead of @NO
 }
 
 - (void)hideAnimated:(BOOL)flag {
@@ -483,7 +483,7 @@ CODialogSynth(highlightedIndex)
   
   SEL selector = @selector(hideAnimated:);
   [NSObject cancelPreviousPerformRequestsWithTarget:self selector:selector object:nil];
-  [self performSelector:selector withObject:[NSNumber numberWithBool:flag] afterDelay:delay];
+  [self performSelector:selector withObject:(flag ? [NSNumber numberWithBool:1] : nil) afterDelay:delay]; // ROOM1337-use nil instead of @NO
 }
 
 - (void)drawDialogBackgroundInRect:(CGRect)rect {
